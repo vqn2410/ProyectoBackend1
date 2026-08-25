@@ -2,6 +2,12 @@
 
 Proyecto Node.js con ES Modules para administrar los servicios de un sistema de turnos y reservas.
 
+**Curso:** Programacion Backend I: Desarrollo Avanzado de Backend
+
+**Comision:** #95150
+
+**Estudiante:** Nicolas Vergara
+
 ## Tecnologias
 
 - Node.js
