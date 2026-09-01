@@ -1,4 +1,4 @@
-# Sistema Backend de Turnos y Reservas
+# Pre-entrega 2: Sistema Backend de Turnos y Reservas
 
 API REST para la gestión del recurso `services`. Construida con **Node.js** y **Express** usando módulos ES (ESM).
 
