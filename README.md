@@ -2,6 +2,12 @@
 
 API REST para la gestión del recurso `services`. Construida con **Node.js** y **Express** usando módulos ES (ESM).
 
+**Curso:** Programacion Backend I: Desarrollo Avanzado de Backend
+
+**Comision:** #95150
+
+**Estudiante:** Nicolas Vergara
+
 ## Requisitos
 
 - Node.js >= 18
