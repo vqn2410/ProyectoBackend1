@@ -4,19 +4,25 @@ import ServiceManager from '../managers/ServiceManager.js';
 const router = Router();
 const serviceManager = new ServiceManager();
 
-router.get('/', (req, res) => {
-  const filters = {
-    category: req.query.category,
-    available: req.query.available
-  };
+router.get('/', async (req, res) => {
+  const services = await serviceManager.getServices();
 
-  const services = serviceManager.getAll(filters);
-  res.json(services);
+  let result = services;
+  if (req.query.category) {
+    result = result.filter(service => service.category === req.query.category);
+  }
+
+  if (req.query.available !== undefined) {
+    const isAvailable = req.query.available === 'true';
+    result = result.filter(service => service.available === isAvailable);
+  }
+
+  res.json(result);
 });
 
-router.get('/:sid', (req, res) => {
+router.get('/:sid', async (req, res) => {
   const { sid } = req.params;
-  const service = serviceManager.getById(sid);
+  const service = await serviceManager.getServiceById(sid);
 
   if (!service) {
     return res.status(404).json({ error: 'Service not found' });
@@ -25,18 +31,18 @@ router.get('/:sid', (req, res) => {
   res.json(service);
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const newService = serviceManager.create(req.body);
+    const newService = await serviceManager.addService(req.body);
     res.status(201).json(newService);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-router.put('/:sid', (req, res) => {
+router.put('/:sid', async (req, res) => {
   const { sid } = req.params;
-  const updatedService = serviceManager.update(sid, req.body);
+  const updatedService = await serviceManager.updateService(sid, req.body);
 
   if (!updatedService) {
     return res.status(404).json({ error: 'Service not found' });
@@ -45,9 +51,9 @@ router.put('/:sid', (req, res) => {
   res.json(updatedService);
 });
 
-router.delete('/:sid', (req, res) => {
+router.delete('/:sid', async (req, res) => {
   const { sid } = req.params;
-  const deletedService = serviceManager.delete(sid);
+  const deletedService = await serviceManager.deleteService(sid);
 
   if (!deletedService) {
     return res.status(404).json({ error: 'Service not found' });

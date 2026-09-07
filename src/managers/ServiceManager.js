@@ -1,68 +1,88 @@
 import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
+import { fileURLToPath } from 'url';
+
+const DATA_FILE = fileURLToPath(new URL('../data/services.json', import.meta.url));
 
 class ServiceManager {
-  constructor() {
-    this.services = [];
-  }
-
-  getAll(filters = {}) {
-    let result = [...this.services];
-
-    if (filters.category) {
-      result = result.filter(service => service.category === filters.category);
+  async readFile() {
+    try {
+      const data = await fs.readFile(DATA_FILE, 'utf-8');
+      return JSON.parse(data);
+    } catch {
+      return [];
     }
-
-    if (filters.available !== undefined) {
-      const isAvailable = filters.available === 'true';
-      result = result.filter(service => service.available === isAvailable);
-    }
-
-    return result;
   }
 
-  getById(sid) {
-    return this.services.find(service => service.id === sid) || null;
+  async writeFile(services) {
+    await fs.writeFile(DATA_FILE, JSON.stringify(services, null, 2), 'utf-8');
   }
 
-  create(data) {
-    const requiredFields = ['name', 'description', 'category', 'price'];
+  async getServices() {
+    return this.readFile();
+  }
+
+  async getServiceById(sid) {
+    const services = await this.readFile();
+    return services.find(service => service.id === sid) || null;
+  }
+
+  async addService(data) {
+    const requiredFields = ['name', 'description', 'duration', 'price', 'category', 'available'];
     for (const field of requiredFields) {
-      if (!data[field]) {
+      if (data[field] === undefined || data[field] === null || data[field] === '') {
         throw new Error(`Missing required field: ${field}`);
       }
+    }
+
+    if (typeof data.duration !== 'number' || data.duration <= 0) {
+      throw new Error('duration must be a positive number');
+    }
+
+    if (typeof data.price !== 'number' || data.price <= 0) {
+      throw new Error('price must be a positive number');
     }
 
     const newService = {
       id: randomUUID(),
       name: data.name,
       description: data.description,
-      category: data.category,
+      duration: data.duration,
       price: data.price,
-      available: data.available !== undefined ? data.available : true
+      category: data.category,
+      available: data.available
     };
 
-    this.services.push(newService);
+    const services = await this.readFile();
+    services.push(newService);
+    await this.writeFile(services);
     return newService;
   }
 
-  update(sid, data) {
-    const index = this.services.findIndex(service => service.id === sid);
+  async updateService(sid, data) {
+    const services = await this.readFile();
+    const index = services.findIndex(service => service.id === sid);
+
     if (index === -1) {
       return null;
     }
 
     const { id, ...updateData } = data;
-    this.services[index] = { ...this.services[index], ...updateData };
-    return this.services[index];
+    services[index] = { id: services[index].id, ...services[index], ...updateData };
+    await this.writeFile(services);
+    return services[index];
   }
 
-  delete(sid) {
-    const index = this.services.findIndex(service => service.id === sid);
+  async deleteService(sid) {
+    const services = await this.readFile();
+    const index = services.findIndex(service => service.id === sid);
+
     if (index === -1) {
       return null;
     }
 
-    const deleted = this.services.splice(index, 1);
+    const deleted = services.splice(index, 1);
+    await this.writeFile(services);
     return deleted[0];
   }
 }
