@@ -37,6 +37,9 @@ Los datos se persisten en `src/data/services.json` y `src/data/bookings.json`, p
 ```
 src/
   config/env.config.js       # Configuración de variables de entorno
+  controllers/
+    services.controller.js    # Controladores del recurso services
+    bookings.controller.js    # Controladores del recurso bookings
   managers/ServiceManager.js  # CRUD de servicios con persistencia en services.json
   managers/BookingManager.js  # Reservas con persistencia en bookings.json
   routes/services.router.js   # Rutas del recurso services

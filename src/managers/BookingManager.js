@@ -3,7 +3,6 @@ import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
 
 const DATA_FILE = fileURLToPath(new URL('../data/bookings.json', import.meta.url));
-const SERVICES_FILE = fileURLToPath(new URL('../data/services.json', import.meta.url));
 
 class BookingManager {
   async readFile() {
@@ -17,16 +16,6 @@ class BookingManager {
 
   async writeFile(bookings) {
     await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2), 'utf-8');
-  }
-
-  async isServiceValid(sid) {
-    try {
-      const data = await fs.readFile(SERVICES_FILE, 'utf-8');
-      const services = JSON.parse(data);
-      return services.some(service => service.id === sid);
-    } catch {
-      return false;
-    }
   }
 
   async createBooking(data) {
@@ -63,11 +52,7 @@ class BookingManager {
     const booking = bookings.find(item => item.id === bid);
 
     if (!booking) {
-      return { error: 'Booking not found' };
-    }
-
-    if (!(await this.isServiceValid(sid))) {
-      return { error: 'Service not found' };
+      return null;
     }
 
     const existing = booking.services.find(item => item.service === sid);
@@ -78,7 +63,7 @@ class BookingManager {
     }
 
     await this.writeFile(bookings);
-    return { booking };
+    return booking;
   }
 }
 
