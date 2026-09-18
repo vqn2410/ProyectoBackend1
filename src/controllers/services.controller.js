@@ -3,29 +3,37 @@ import ServiceManager from '../managers/ServiceManager.js';
 const serviceManager = new ServiceManager();
 
 export async function getServices(req, res) {
-  const services = await serviceManager.getServices();
-  let result = services;
+  try {
+    const services = await serviceManager.getServices();
+    let result = services;
 
-  if (req.query.category) {
-    result = result.filter(service => service.category === req.query.category);
+    if (req.query.category) {
+      result = result.filter(service => service.category === req.query.category);
+    }
+
+    if (req.query.available !== undefined) {
+      const isAvailable = req.query.available === 'true';
+      result = result.filter(service => service.available === isAvailable);
+    }
+
+    res.status(200).json(result);
+  } catch {
+    res.status(500).json({ error: 'Unable to retrieve services' });
   }
-
-  if (req.query.available !== undefined) {
-    const isAvailable = req.query.available === 'true';
-    result = result.filter(service => service.available === isAvailable);
-  }
-
-  res.status(200).json(result);
 }
 
 export async function getServiceById(req, res) {
-  const service = await serviceManager.getServiceById(req.params.sid);
+  try {
+    const service = await serviceManager.getServiceById(req.params.sid);
 
-  if (!service) {
-    return res.status(404).json({ error: 'Service not found' });
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    res.status(200).json(service);
+  } catch {
+    res.status(500).json({ error: 'Unable to retrieve service' });
   }
-
-  res.status(200).json(service);
 }
 
 export async function createService(req, res) {
@@ -38,21 +46,29 @@ export async function createService(req, res) {
 }
 
 export async function updateService(req, res) {
-  const service = await serviceManager.updateService(req.params.sid, req.body);
+  try {
+    const service = await serviceManager.updateService(req.params.sid, req.body);
 
-  if (!service) {
-    return res.status(404).json({ error: 'Service not found' });
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    res.status(200).json(service);
+  } catch {
+    res.status(500).json({ error: 'Unable to update service' });
   }
-
-  res.status(200).json(service);
 }
 
 export async function deleteService(req, res) {
-  const service = await serviceManager.deleteService(req.params.sid);
+  try {
+    const service = await serviceManager.deleteService(req.params.sid);
 
-  if (!service) {
-    return res.status(404).json({ error: 'Service not found' });
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    res.status(200).json(service);
+  } catch {
+    res.status(500).json({ error: 'Unable to delete service' });
   }
-
-  res.status(200).json(service);
 }

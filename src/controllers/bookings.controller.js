@@ -14,28 +14,36 @@ export async function createBooking(req, res) {
 }
 
 export async function getBookingById(req, res) {
-  const booking = await bookingManager.getBookingById(req.params.bid);
+  try {
+    const booking = await bookingManager.getBookingById(req.params.bid);
 
-  if (!booking) {
-    return res.status(404).json({ error: 'Booking not found' });
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    res.status(200).json(booking);
+  } catch {
+    res.status(500).json({ error: 'Unable to retrieve booking' });
   }
-
-  res.status(200).json(booking);
 }
 
 export async function addServiceToBooking(req, res) {
-  const { bid, sid } = req.params;
-  const booking = await bookingManager.getBookingById(bid);
+  try {
+    const { bid, sid } = req.params;
+    const booking = await bookingManager.getBookingById(bid);
 
-  if (!booking) {
-    return res.status(404).json({ error: 'Booking not found' });
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const service = await serviceManager.getServiceById(sid);
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    const updatedBooking = await bookingManager.addServiceToBooking(bid, sid);
+    res.status(200).json(updatedBooking);
+  } catch {
+    res.status(500).json({ error: 'Unable to add service to booking' });
   }
-
-  const service = await serviceManager.getServiceById(sid);
-  if (!service) {
-    return res.status(404).json({ error: 'Service not found' });
-  }
-
-  const updatedBooking = await bookingManager.addServiceToBooking(bid, sid);
-  res.status(200).json(updatedBooking);
 }
