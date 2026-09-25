@@ -1,22 +1,15 @@
-import ServiceManager from '../managers/ServiceManager.js';
+import ServicesDAO from '../dao/services.dao.js';
+import ServicesRepository from '../repositories/services.repository.js';
+import ServicesService from '../services/services.service.js';
 
-const serviceManager = new ServiceManager();
+const servicesService = new ServicesService(
+  new ServicesRepository(new ServicesDAO())
+);
 
 export async function getServices(req, res) {
   try {
-    const services = await serviceManager.getServices();
-    let result = services;
-
-    if (req.query.category) {
-      result = result.filter(service => service.category === req.query.category);
-    }
-
-    if (req.query.available !== undefined) {
-      const isAvailable = req.query.available === 'true';
-      result = result.filter(service => service.available === isAvailable);
-    }
-
-    res.status(200).json(result);
+    const services = await servicesService.getServices(req.query);
+    res.status(200).json(services);
   } catch {
     res.status(500).json({ error: 'Unable to retrieve services' });
   }
@@ -24,7 +17,7 @@ export async function getServices(req, res) {
 
 export async function getServiceById(req, res) {
   try {
-    const service = await serviceManager.getServiceById(req.params.sid);
+    const service = await servicesService.getServiceById(req.params.sid);
 
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
@@ -38,16 +31,18 @@ export async function getServiceById(req, res) {
 
 export async function createService(req, res) {
   try {
-    const service = await serviceManager.addService(req.body);
+    const service = await servicesService.createService(req.body);
     res.status(201).json(service);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : 'Unable to create service'
+    });
   }
 }
 
 export async function updateService(req, res) {
   try {
-    const service = await serviceManager.updateService(req.params.sid, req.body);
+    const service = await servicesService.updateService(req.params.sid, req.body);
 
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });
@@ -61,7 +56,7 @@ export async function updateService(req, res) {
 
 export async function deleteService(req, res) {
   try {
-    const service = await serviceManager.deleteService(req.params.sid);
+    const service = await servicesService.deleteService(req.params.sid);
 
     if (!service) {
       return res.status(404).json({ error: 'Service not found' });

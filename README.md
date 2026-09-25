@@ -40,14 +40,35 @@ src/
   controllers/
     services.controller.js    # Controladores del recurso services
     bookings.controller.js    # Controladores del recurso bookings
-  managers/ServiceManager.js  # CRUD de servicios con persistencia en services.json
-  managers/BookingManager.js  # Reservas con persistencia en bookings.json
+  services/
+    services.service.js       # Reglas de negocio de services
+    bookings.service.js       # Reglas de negocio de bookings
+  repositories/
+    services.repository.js    # Acceso abstracto a services
+    bookings.repository.js    # Acceso abstracto a bookings
+  dao/
+    services.dao.js            # Lectura/escritura de services.json
+    bookings.dao.js            # Lectura/escritura de bookings.json
   routes/services.router.js   # Rutas del recurso services
   routes/bookings.router.js   # Rutas del recurso bookings
   data/                       # Archivos JSON de persistencia
   app.js                      # Configuración de Express
   server.js                   # Punto de entrada del servidor
 ```
+
+## Arquitectura en capas
+
+Las solicitudes siguen el flujo:
+
+```text
+Router → Controller → Service → Repository → DAO → archivo JSON
+```
+
+- **Router:** define las URLs y conecta cada endpoint con su controller.
+- **Controller:** lee `req`, llama al service y responde con `res`.
+- **Service:** contiene las validaciones y reglas de negocio, como incrementar `quantity` al repetir un servicio en una reserva.
+- **Repository:** expone operaciones de acceso a datos sin reglas de negocio.
+- **DAO:** lee y escribe directamente los archivos JSON.
 
 ## Recurso services
 
