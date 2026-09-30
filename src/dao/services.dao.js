@@ -1,65 +1,45 @@
-import { promises as fs } from 'fs';
-import { fileURLToPath } from 'url';
-
-const DATA_FILE = fileURLToPath(new URL('../data/services.json', import.meta.url));
+import mongoose from 'mongoose';
+import Service from '../models/service.model.js';
 
 class ServicesDAO {
-  async readFile() {
-    try {
-      const data = await fs.readFile(DATA_FILE, 'utf-8');
-      return JSON.parse(data);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        return [];
-      }
-      throw error;
-    }
-  }
-
-  async writeFile(services) {
-    await fs.writeFile(DATA_FILE, JSON.stringify(services, null, 2), 'utf-8');
-  }
-
   async getAll() {
-    return this.readFile();
+    const services = await Service.find();
+    return services.map(service => service.toJSON());
   }
 
   async getById(id) {
-    const services = await this.readFile();
-    return services.find(service => service.id === id) || null;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+
+    const service = await Service.findById(id);
+    return service ? service.toJSON() : null;
   }
 
-  async create(service) {
-    const services = await this.readFile();
-    services.push(service);
-    await this.writeFile(services);
-    return service;
+  async create(data) {
+    const service = await Service.create(data);
+    return service.toJSON();
   }
 
   async update(id, data) {
-    const services = await this.readFile();
-    const index = services.findIndex(service => service.id === id);
-
-    if (index === -1) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }
 
-    services[index] = { ...services[index], ...data, id: services[index].id };
-    await this.writeFile(services);
-    return services[index];
+    const service = await Service.findByIdAndUpdate(id, data, {
+      returnDocument: 'after',
+      runValidators: true
+    });
+    return service ? service.toJSON() : null;
   }
 
   async delete(id) {
-    const services = await this.readFile();
-    const index = services.findIndex(service => service.id === id);
-
-    if (index === -1) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }
 
-    const [deleted] = services.splice(index, 1);
-    await this.writeFile(services);
-    return deleted;
+    const service = await Service.findByIdAndDelete(id);
+    return service ? service.toJSON() : null;
   }
 }
 

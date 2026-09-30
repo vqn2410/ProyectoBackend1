@@ -1,6 +1,6 @@
-# Pre-entrega 5: Sistema Backend de Turnos y Reservas
+# Pre-entrega 6: Sistema Backend de Turnos y Reservas
 
-API REST para la gestión de **servicios** y **reservas**, con persistencia en archivos JSON (FileSystem). Construida con **Node.js** y **Express** usando módulos ES (ESM).
+API REST para la gestión de **servicios**, **reservas** y **mensajes**, con persistencia en **MongoDB Atlas** mediante **Mongoose**. Construida con **Node.js** y **Express** usando módulos ES (ESM).
 
 **Curso:** Programacion Backend I: Desarrollo Avanzado de Backend
 
@@ -12,12 +12,21 @@ API REST para la gestión de **servicios** y **reservas**, con persistencia en a
 
 - Node.js >= 18
 - npm
+- Una base de datos en MongoDB Atlas (o local)
 
 ## Instalación
 
 ```bash
 npm install
 cp .env.example .env
+```
+
+Completar `MONGO_URI` en `.env` con la cadena de conexión de MongoDB Atlas:
+
+```env
+PORT=3000
+NODE_ENV=development
+MONGO_URI=mongodb+srv://usuario:password@cluster.mongodb.net/turnos?retryWrites=true&w=majority
 ```
 
 ## Ejecución
@@ -28,32 +37,42 @@ npm start
 npm run dev
 ```
 
-El servidor corre en el puerto definido en `.env` (por defecto `3000`).
-
-Los datos se persisten en `src/data/services.json` y `src/data/bookings.json`, por lo que **no se pierden al reiniciar el servidor**.
+El servidor se conecta a MongoDB y luego escucha en el puerto definido en `.env` (por defecto `3000`).
 
 ## Estructura
 
 ```
 src/
-  config/env.config.js       # Configuración de variables de entorno
+  config/
+    env.config.js              # Variables de entorno (PORT, MONGO_URI)
+    db.config.js               # Conexión a MongoDB con Mongoose
+  models/
+    service.model.js           # Schema de Service
+    booking.model.js           # Schema de Booking (services con ObjectId)
+    message.model.js           # Schema de Message
   controllers/
-    services.controller.js    # Controladores del recurso services
-    bookings.controller.js    # Controladores del recurso bookings
+    services.controller.js     # Controladores del recurso services
+    bookings.controller.js     # Controladores del recurso bookings
+    messages.controller.js     # Controladores del recurso messages
   services/
-    services.service.js       # Reglas de negocio de services
-    bookings.service.js       # Reglas de negocio de bookings
+    services.service.js        # Reglas de negocio de services
+    bookings.service.js        # Reglas de negocio de bookings
+    messages.service.js        # Reglas de negocio de messages
   repositories/
-    services.repository.js    # Acceso abstracto a services
-    bookings.repository.js    # Acceso abstracto a bookings
+    services.repository.js     # Acceso abstracto a services
+    bookings.repository.js     # Acceso abstracto a bookings
+    messages.repository.js     # Acceso abstracto a messages
   dao/
-    services.dao.js            # Lectura/escritura de services.json
-    bookings.dao.js            # Lectura/escritura de bookings.json
-  routes/services.router.js   # Rutas del recurso services
-  routes/bookings.router.js   # Rutas del recurso bookings
-  data/                       # Archivos JSON de persistencia
-  app.js                      # Configuración de Express
-  server.js                   # Punto de entrada del servidor
+    services.dao.js            # Acceso a la colección de services con Mongoose
+    bookings.dao.js            # Acceso a la colección de bookings con Mongoose
+    messages.dao.js            # Acceso a la colección de messages con Mongoose
+  routes/
+    services.router.js         # Rutas del recurso services
+    bookings.router.js         # Rutas del recurso bookings
+    messages.router.js         # Rutas del recurso messages
+  utils/error.util.js          # Normalización de errores para las respuestas HTTP
+  app.js                       # Configuración de Express
+  server.js                    # Conexión a MongoDB y arranque del servidor
 ```
 
 ## Arquitectura en capas
@@ -61,18 +80,24 @@ src/
 Las solicitudes siguen el flujo:
 
 ```text
-Router → Controller → Service → Repository → DAO → archivo JSON
+Router → Controller → Service → Repository → DAO → MongoDB (Mongoose)
 ```
 
 - **Router:** define las URLs y conecta cada endpoint con su controller.
 - **Controller:** lee `req`, llama al service y responde con `res`.
 - **Service:** contiene las validaciones y reglas de negocio, como incrementar `quantity` al repetir un servicio en una reserva.
 - **Repository:** expone operaciones de acceso a datos sin reglas de negocio.
-- **DAO:** lee y escribe directamente los archivos JSON.
+- **DAO:** es la única capa que interactúa con Mongoose y las colecciones de MongoDB.
+
+En `booking`, los servicios se referencian con `ObjectId`:
+
+```js
+services: [{ service: ObjectId, quantity: Number }]
+```
 
 ## Recurso services
 
-Cada servicio tiene: `id` (autogenerado), `name`, `description`, `duration`, `price`, `category`, `available`.
+Cada servicio tiene: `id` (autogenerado por MongoDB), `name`, `description`, `duration`, `price`, `category`, `available`.
 
 ### Endpoints de services
 
@@ -86,7 +111,7 @@ Cada servicio tiene: `id` (autogenerado), `name`, `description`, `duration`, `pr
 
 ## Recurso bookings
 
-Cada reserva tiene: `id` (autogenerado), `clientName`, `clientEmail`, `date`, `time`, `status`, `services: []`. Dentro del array los servicios se guardan como `{ service: idDelServicio, quantity: 1 }`; si el mismo servicio se agrega dos veces, se incrementa `quantity`.
+Cada reserva tiene: `id` (autogenerado por MongoDB), `clientName`, `clientEmail`, `date`, `time`, `status`, `services: []`. Dentro del array los servicios se guardan como `{ service: ObjectId, quantity: 1 }`; si el mismo servicio se agrega dos veces, se incrementa `quantity`.
 
 ### Endpoints de bookings
 
@@ -95,6 +120,18 @@ Cada reserva tiene: `id` (autogenerado), `clientName`, `clientEmail`, `date`, `t
 | POST   | `/api/bookings`                    | Crea una reserva (201 si se crea, 400 si faltan campos). Puede iniciar con `services` vacío |
 | GET    | `/api/bookings/:bid`               | Devuelve una reserva por id (200 si existe, 404 si no)                         |
 | POST   | `/api/bookings/:bid/services/:sid` | Agrega un servicio a una reserva existente (200). Valida que ambos existan (404) |
+
+## Recurso messages
+
+Cada mensaje tiene: `id` (autogenerado por MongoDB), `user`, `message`, `createdAt`.
+
+### Endpoints de messages
+
+| Método | Ruta                    | Descripción                                              |
+|--------|-------------------------|----------------------------------------------------------|
+| GET    | `/api/messages`         | Devuelve todos los mensajes                              |
+| GET    | `/api/messages/:mid`    | Devuelve un mensaje por id (200 si existe, 404 si no)    |
+| POST   | `/api/messages`         | Crea un mensaje (201 si se crea, 400 si faltan campos)   |
 
 ## Ejemplos de uso
 

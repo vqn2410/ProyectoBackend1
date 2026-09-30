@@ -1,5 +1,3 @@
-import { randomUUID } from 'crypto';
-
 function createError(message, statusCode) {
   const error = new Error(message);
   error.statusCode = statusCode;
@@ -21,7 +19,6 @@ class BookingsService {
     }
 
     return this.repository.create({
-      id: randomUUID(),
       clientName: data.clientName,
       clientEmail: data.clientEmail,
       date: data.date,
@@ -46,7 +43,9 @@ class BookingsService {
       throw createError('Service not found', 404);
     }
 
-    const bookingService = booking.services.find(item => item.service === serviceId);
+    const bookingService = booking.services.find(
+      item => String(item.service) === String(serviceId)
+    );
     if (bookingService) {
       bookingService.quantity += 1;
     } else {

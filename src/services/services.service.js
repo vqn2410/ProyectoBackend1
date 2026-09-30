@@ -1,5 +1,3 @@
-import { randomUUID } from 'crypto';
-
 function createError(message, statusCode) {
   const error = new Error(message);
   error.statusCode = statusCode;
@@ -47,7 +45,6 @@ class ServicesService {
     }
 
     return this.repository.create({
-      id: randomUUID(),
       name: data.name,
       description: data.description,
       duration: data.duration,

@@ -4,6 +4,7 @@ import BookingsService from '../services/bookings.service.js';
 import ServicesDAO from '../dao/services.dao.js';
 import ServicesRepository from '../repositories/services.repository.js';
 import ServicesService from '../services/services.service.js';
+import { resolveError } from '../utils/error.util.js';
 
 const servicesService = new ServicesService(
   new ServicesRepository(new ServicesDAO())
@@ -18,9 +19,8 @@ export async function createBooking(req, res) {
     const booking = await bookingsService.createBooking(req.body);
     res.status(201).json(booking);
   } catch (error) {
-    res.status(error.statusCode || 500).json({
-      error: error.statusCode ? error.message : 'Unable to create booking'
-    });
+    const { statusCode, message } = resolveError(error, 'Unable to create booking');
+    res.status(statusCode).json({ error: message });
   }
 }
 
@@ -33,8 +33,9 @@ export async function getBookingById(req, res) {
     }
 
     res.status(200).json(booking);
-  } catch {
-    res.status(500).json({ error: 'Unable to retrieve booking' });
+  } catch (error) {
+    const { statusCode, message } = resolveError(error, 'Unable to retrieve booking');
+    res.status(statusCode).json({ error: message });
   }
 }
 
@@ -46,8 +47,7 @@ export async function addServiceToBooking(req, res) {
     );
     res.status(200).json(booking);
   } catch (error) {
-    res.status(error.statusCode || 500).json({
-      error: error.statusCode ? error.message : 'Unable to add service to booking'
-    });
+    const { statusCode, message } = resolveError(error, 'Unable to add service to booking');
+    res.status(statusCode).json({ error: message });
   }
 }

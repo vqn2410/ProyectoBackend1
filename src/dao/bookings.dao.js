@@ -1,48 +1,31 @@
-import { promises as fs } from 'fs';
-import { fileURLToPath } from 'url';
-
-const DATA_FILE = fileURLToPath(new URL('../data/bookings.json', import.meta.url));
+import mongoose from 'mongoose';
+import Booking from '../models/booking.model.js';
 
 class BookingsDAO {
-  async readFile() {
-    try {
-      const data = await fs.readFile(DATA_FILE, 'utf-8');
-      return JSON.parse(data);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        return [];
-      }
-      throw error;
-    }
-  }
-
-  async writeFile(bookings) {
-    await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2), 'utf-8');
-  }
-
-  async create(booking) {
-    const bookings = await this.readFile();
-    bookings.push(booking);
-    await this.writeFile(bookings);
-    return booking;
+  async create(data) {
+    const booking = await Booking.create(data);
+    return booking.toJSON();
   }
 
   async getById(id) {
-    const bookings = await this.readFile();
-    return bookings.find(booking => booking.id === id) || null;
-  }
-
-  async update(id, data) {
-    const bookings = await this.readFile();
-    const index = bookings.findIndex(booking => booking.id === id);
-
-    if (index === -1) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }
 
-    bookings[index] = { ...bookings[index], ...data, id: bookings[index].id };
-    await this.writeFile(bookings);
-    return bookings[index];
+    const booking = await Booking.findById(id);
+    return booking ? booking.toJSON() : null;
+  }
+
+  async update(id, data) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+
+    const booking = await Booking.findByIdAndUpdate(id, data, {
+      returnDocument: 'after',
+      runValidators: true
+    });
+    return booking ? booking.toJSON() : null;
   }
 }
 
