@@ -1,11 +1,6 @@
-import ServicesDAO from '../dao/services.dao.js';
-import ServicesRepository from '../repositories/services.repository.js';
-import ServicesService from '../services/services.service.js';
+import { servicesService } from '../container.js';
+import { broadcast } from '../config/socket.config.js';
 import { resolveError } from '../utils/error.util.js';
-
-const servicesService = new ServicesService(
-  new ServicesRepository(new ServicesDAO())
-);
 
 export async function getServices(req, res) {
   try {
@@ -35,6 +30,7 @@ export async function getServiceById(req, res) {
 export async function createService(req, res) {
   try {
     const service = await servicesService.createService(req.body);
+    broadcast('service:created', service);
     res.status(201).json(service);
   } catch (error) {
     const { statusCode, message } = resolveError(error, 'Unable to create service');
@@ -50,6 +46,7 @@ export async function updateService(req, res) {
       return res.status(404).json({ error: 'Service not found' });
     }
 
+    broadcast('service:updated', service);
     res.status(200).json(service);
   } catch (error) {
     const { statusCode, message } = resolveError(error, 'Unable to update service');
@@ -65,6 +62,7 @@ export async function deleteService(req, res) {
       return res.status(404).json({ error: 'Service not found' });
     }
 
+    broadcast('service:deleted', { id: req.params.sid });
     res.status(200).json(service);
   } catch (error) {
     const { statusCode, message } = resolveError(error, 'Unable to delete service');

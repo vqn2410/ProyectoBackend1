@@ -1,0 +1,48 @@
+<section>
+  <h2>Servicios</h2>
+
+  <form id="serviceForm" class="card">
+    <input name="name" placeholder="Nombre" required />
+    <input name="description" placeholder="Descripción" required />
+    <input name="duration" type="number" min="1" placeholder="Duración (min)" required />
+    <input name="price" type="number" min="1" placeholder="Precio" required />
+    <input name="category" placeholder="Categoría" required />
+    <label class="checkbox">
+      <input type="checkbox" name="available" checked /> Disponible
+    </label>
+    <button type="submit">Crear servicio</button>
+  </form>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Duración</th>
+        <th>Precio</th>
+        <th>Categoría</th>
+        <th>Disponibilidad</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody id="servicesTable">
+      {{#each services}}
+        <tr data-service-id="{{this.id}}">
+          <td>{{this.name}}</td>
+          <td>{{this.description}}</td>
+          <td>{{this.duration}} min</td>
+          <td>${{this.price}}</td>
+          <td>{{this.category}}</td>
+          <td class="service-available {{#if this.available}}yes{{else}}no{{/if}}">{{#if this.available}}Sí{{else}}No{{/if}}</td>
+          <td>
+            <button class="toggle-btn" data-sid="{{this.id}}">Cambiar disponibilidad</button>
+          </td>
+        </tr>
+      {{else}}
+        <tr id="servicesEmpty">
+          <td colspan="7">No hay servicios cargados.</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</section>

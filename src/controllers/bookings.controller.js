@@ -1,22 +1,11 @@
-import BookingsDAO from '../dao/bookings.dao.js';
-import BookingsRepository from '../repositories/bookings.repository.js';
-import BookingsService from '../services/bookings.service.js';
-import ServicesDAO from '../dao/services.dao.js';
-import ServicesRepository from '../repositories/services.repository.js';
-import ServicesService from '../services/services.service.js';
+import { bookingsService } from '../container.js';
+import { broadcast } from '../config/socket.config.js';
 import { resolveError } from '../utils/error.util.js';
-
-const servicesService = new ServicesService(
-  new ServicesRepository(new ServicesDAO())
-);
-const bookingsService = new BookingsService(
-  new BookingsRepository(new BookingsDAO()),
-  servicesService
-);
 
 export async function createBooking(req, res) {
   try {
     const booking = await bookingsService.createBooking(req.body);
+    broadcast('booking:created', booking);
     res.status(201).json(booking);
   } catch (error) {
     const { statusCode, message } = resolveError(error, 'Unable to create booking');
@@ -45,6 +34,7 @@ export async function addServiceToBooking(req, res) {
       req.params.bid,
       req.params.sid
     );
+    broadcast('booking:updated', booking);
     res.status(200).json(booking);
   } catch (error) {
     const { statusCode, message } = resolveError(error, 'Unable to add service to booking');

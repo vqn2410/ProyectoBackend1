@@ -1,0 +1,40 @@
+<section>
+  <h2>Disponibilidad de reservas</h2>
+
+  <form id="bookingForm" class="card">
+    <input name="clientName" placeholder="Cliente" required />
+    <input name="clientEmail" type="email" placeholder="Email" required />
+    <input name="date" type="date" required />
+    <input name="time" type="time" required />
+    <button type="submit">Crear reserva</button>
+  </form>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th>Email</th>
+        <th>Fecha</th>
+        <th>Hora</th>
+        <th>Estado</th>
+        <th>Servicios</th>
+      </tr>
+    </thead>
+    <tbody id="bookingsTable">
+      {{#each bookings}}
+        <tr data-booking-id="{{this.id}}">
+          <td>{{this.clientName}}</td>
+          <td>{{this.clientEmail}}</td>
+          <td>{{this.date}}</td>
+          <td>{{this.time}}</td>
+          <td>{{this.status}}</td>
+          <td>{{this.services.length}}</td>
+        </tr>
+      {{else}}
+        <tr id="bookingsEmpty">
+          <td colspan="6">No hay reservas cargadas.</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</section>

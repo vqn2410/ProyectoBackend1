@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 import Booking from '../models/booking.model.js';
 
 class BookingsDAO {
+  async getAll() {
+    const bookings = await Booking.find().sort({ date: 1, time: 1 });
+    return bookings.map(booking => booking.toJSON());
+  }
+
   async create(data) {
     const booking = await Booking.create(data);
     return booking.toJSON();

@@ -28,6 +28,10 @@ class BookingsService {
     });
   }
 
+  getBookings() {
+    return this.repository.getAll();
+  }
+
   getBookingById(id) {
     return this.repository.getById(id);
   }

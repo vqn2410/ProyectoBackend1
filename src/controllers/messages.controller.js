@@ -1,11 +1,5 @@
-import MessagesDAO from '../dao/messages.dao.js';
-import MessagesRepository from '../repositories/messages.repository.js';
-import MessagesService from '../services/messages.service.js';
+import { messagesService } from '../container.js';
 import { resolveError } from '../utils/error.util.js';
-
-const messagesService = new MessagesService(
-  new MessagesRepository(new MessagesDAO())
-);
 
 export async function getMessages(req, res) {
   try {
