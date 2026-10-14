@@ -1,6 +1,6 @@
-# Pre-entrega 7: Sistema Backend de Turnos y Reservas
+# Pre-entrega 8: Sistema Backend de Turnos y Reservas
 
-API REST para la gestión de **servicios**, **reservas** y **mensajes**, con persistencia en **MongoDB Atlas** mediante **Mongoose**, **vistas server-side con Handlebars** y **comunicación en tiempo real con Socket.io**. Construida con **Node.js** y **Express** usando módulos ES (ESM).
+API REST para la gestión de **servicios**, **reservas** y **mensajes**, con persistencia en **MongoDB Atlas** mediante **Mongoose**, **vistas server-side con Handlebars**, **comunicación en tiempo real con Socket.io**, **consultas avanzadas (filtros, paginación y ordenamiento)**, **validación con Zod** y **relaciones con `populate`**. Construida con **Node.js** y **Express** usando módulos ES (ESM).
 
 **Curso:** Programacion Backend I: Desarrollo Avanzado de Backend
 
@@ -81,6 +81,11 @@ src/
   public/
     css/styles.css             # Estilos de las vistas
     js/socket.js               # Lógica de cliente de Socket.io
+  middlewares/
+    validate.middleware.js     # Valida req.body/req.params con Zod antes del controller
+  validators/
+    service.validator.js       # Esquemas Zod de services
+    booking.validator.js       # Esquemas Zod de bookings
   utils/error.util.js          # Normalización de errores para las respuestas HTTP
   app.js                       # Configuración de Express, Handlebars y estáticos
   server.js                    # Conexión a MongoDB, Socket.io y arranque del servidor
@@ -114,11 +119,49 @@ Cada servicio tiene: `id` (autogenerado por MongoDB), `name`, `description`, `du
 
 | Método | Ruta                    | Descripción                                                        |
 |--------|-------------------------|--------------------------------------------------------------------|
-| GET    | `/api/services`         | Devuelve todos los servicios. Filtros: `?category=`, `?available=` |
+| GET    | `/api/services`         | Listado con filtros, paginación y ordenamiento (ver detalle abajo) |
 | GET    | `/api/services/:sid`    | Devuelve un servicio por id (200 si existe, 404 si no)             |
 | POST   | `/api/services`         | Crea un servicio (201 si se crea, 400 si faltan campos). El id se genera internamente |
 | PUT    | `/api/services/:sid`    | Actualiza un servicio (200 si existe, 404 si no). No permite modificar el id |
 | DELETE | `/api/services/:sid`    | Elimina un servicio (200 si existe, 404 si no)                     |
+
+### Consultas avanzadas en `/api/services`
+
+Parámetros de query soportados:
+
+| Param       | Valores                                                                | Default |
+|-------------|------------------------------------------------------------------------|---------|
+| `category`  | texto                                                                  | -       |
+| `available` | `true` / `false`                                                       | -       |
+| `page`      | número >= 1                                                            | `1`     |
+| `limit`     | número entre 1 y 50                                                    | `10`    |
+| `sortBy`    | `name`, `description`, `category`, `duration`, `price`, `available`    | `name`  |
+| `order`     | `asc` / `desc`                                                         | `asc`   |
+
+La respuesta incluye el listado y los metadatos de paginación:
+
+```json
+{
+  "status": "success",
+  "payload": [ { "id": "...", "name": "Consulta", "price": 5000 } ],
+  "total": 25,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 3,
+  "hasPrevPage": false,
+  "hasNextPage": true,
+  "prevPage": null,
+  "nextPage": 2
+}
+```
+
+Ejemplos:
+
+```bash
+curl "http://localhost:3000/api/services?category=salud&available=true"
+curl "http://localhost:3000/api/services?page=2&limit=5"
+curl "http://localhost:3000/api/services?sortBy=price&order=desc"
+```
 
 ## Recurso bookings
 
@@ -129,8 +172,34 @@ Cada reserva tiene: `id` (autogenerado por MongoDB), `clientName`, `clientEmail`
 | Método | Ruta                               | Descripción                                                                   |
 |--------|------------------------------------|-------------------------------------------------------------------------------|
 | POST   | `/api/bookings`                    | Crea una reserva (201 si se crea, 400 si faltan campos). Puede iniciar con `services` vacío |
-| GET    | `/api/bookings/:bid`               | Devuelve una reserva por id (200 si existe, 404 si no)                         |
+| GET    | `/api/bookings/:bid`               | Devuelve la reserva con los servicios completos (`populate`) (200 si existe, 404 si no) |
 | POST   | `/api/bookings/:bid/services/:sid` | Agrega un servicio a una reserva existente (200). Valida que ambos existan (404) |
+
+### Reserva con servicios completos (`populate`)
+
+`GET /api/bookings/:bid` aplica `populate('services.service')`, por lo que cada servicio se
+devuelve con sus datos completos. En la base **solo se persiste la referencia** (`ObjectId`):
+
+```js
+// Persistido en MongoDB
+services: [{ service: ObjectId, quantity: 1 }]
+
+// Devuelto por GET /api/bookings/:bid
+{
+  "id": "...",
+  "clientName": "Ana",
+  "clientEmail": "ana@mail.com",
+  "date": "2026-10-01",
+  "time": "10:00",
+  "status": "pending",
+  "services": [
+    {
+      "service": { "id": "...", "name": "Masaje", "price": 8000, "category": "spa" },
+      "quantity": 1
+    }
+  ]
+}
+```
 
 ## Recurso messages
 
@@ -143,6 +212,28 @@ Cada mensaje tiene: `id` (autogenerado por MongoDB), `user`, `message`, `created
 | GET    | `/api/messages`         | Devuelve todos los mensajes                              |
 | GET    | `/api/messages/:mid`    | Devuelve un mensaje por id (200 si existe, 404 si no)    |
 | POST   | `/api/messages`         | Crea un mensaje (201 si se crea, 400 si faltan campos)   |
+
+## Validación (Zod)
+
+La validación vive en una capa propia: `src/middlewares/validate.middleware.js` ejecuta los esquemas
+definidos en `src/validators/` **antes del controller** (y por lo tanto antes de llegar a MongoDB).
+Ante datos inválidos responde `400` con el detalle de cada error.
+
+| Esquema                            | Se aplica en                                              |
+|------------------------------------|-----------------------------------------------------------|
+| `createServiceSchema`              | `POST /api/services`                                      |
+| `updateServiceSchema`              | `PUT /api/services/:sid`                                  |
+| `createBookingSchema`              | `POST /api/bookings`                                      |
+| `addServiceToBookingParamsSchema`  | `POST /api/bookings/:bid/services/:sid` (valida `bid` y `sid` como ObjectId) |
+
+Ejemplo de respuesta `400`:
+
+```json
+{
+  "error": "Datos inválidos",
+  "details": [ { "field": "price", "message": "price debe ser un número positivo" } ]
+}
+```
 
 ## Vistas (Handlebars)
 

@@ -32,8 +32,8 @@ class BookingsService {
     return this.repository.getAll();
   }
 
-  getBookingById(id) {
-    return this.repository.getById(id);
+  getBookingById(id, options) {
+    return this.repository.getById(id, options);
   }
 
   async addServiceToBooking(bookingId, serviceId) {

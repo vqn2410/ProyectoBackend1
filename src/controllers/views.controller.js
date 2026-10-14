@@ -3,7 +3,7 @@ import { resolveError } from '../utils/error.util.js';
 
 export async function getServicesView(req, res) {
   try {
-    const services = await servicesService.getServices();
+    const services = await servicesService.getAllServices();
     res.render('services', { title: 'Servicios', services });
   } catch (error) {
     const { statusCode, message } = resolveError(error, 'Unable to render services view');

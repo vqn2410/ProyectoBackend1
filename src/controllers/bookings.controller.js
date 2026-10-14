@@ -15,7 +15,9 @@ export async function createBooking(req, res) {
 
 export async function getBookingById(req, res) {
   try {
-    const booking = await bookingsService.getBookingById(req.params.bid);
+    const booking = await bookingsService.getBookingById(req.params.bid, {
+      populate: true
+    });
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });

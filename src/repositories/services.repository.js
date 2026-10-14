@@ -3,8 +3,8 @@ class ServicesRepository {
     this.dao = dao;
   }
 
-  getAll() {
-    return this.dao.getAll();
+  getAll(options) {
+    return this.dao.getAll(options);
   }
 
   getById(id) {

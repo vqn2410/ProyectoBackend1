@@ -11,8 +11,8 @@ class BookingsRepository {
     return this.dao.create(booking);
   }
 
-  getById(id) {
-    return this.dao.getById(id);
+  getById(id, options) {
+    return this.dao.getById(id, options);
   }
 
   update(id, data) {
