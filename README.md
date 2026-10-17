@@ -1,12 +1,24 @@
-# Pre-entrega 8: Sistema Backend de Turnos y Reservas
+# Entrega Final: Sistema Backend de Turnos y Reservas
 
-API REST para la gestión de **servicios**, **reservas** y **mensajes**, con persistencia en **MongoDB Atlas** mediante **Mongoose**, **vistas server-side con Handlebars**, **comunicación en tiempo real con Socket.io**, **consultas avanzadas (filtros, paginación y ordenamiento)**, **validación con Zod** y **relaciones con `populate`**. Construida con **Node.js** y **Express** usando módulos ES (ESM).
+API REST completa para la gestión de **servicios**, **reservas** y **mensajes**, con persistencia en **MongoDB Atlas** mediante **Mongoose**, arquitectura en capas, **vistas server-side con Handlebars**, **comunicación en tiempo real con Socket.io**, **consultas avanzadas (filtros, paginación y ordenamiento)**, **validación con Zod** y **relaciones con `populate`**. Construida con **Node.js** y **Express** usando módulos ES (ESM).
 
 **Curso:** Programacion Backend I: Desarrollo Avanzado de Backend
 
 **Comision:** #95150
 
 **Estudiante:** Nicolas Vergara
+
+## Funcionalidades
+
+- **CRUD completo de servicios:** `GET`, `GET /:sid`, `POST`, `PUT` y `DELETE` en `/api/services`.
+- **Reservas y asociación de servicios:** `POST /api/bookings`, `GET /api/bookings/:bid` y `POST /api/bookings/:bid/services/:sid`. Los servicios se guardan como referencias `{ service: ObjectId, quantity: Number }`, nunca el objeto completo.
+- **Consultas avanzadas:** `GET /api/services` con filtros (`category`, `available`), paginación (`page`, `limit`) y ordenamiento (`sortBy`, `order`).
+- **Relaciones con `populate`:** `GET /api/bookings/:bid` devuelve los datos completos de cada servicio asociado junto con los datos de la reserva.
+- **Validación con Zod:** esquemas en `src/validators/` aplicados mediante middleware **antes** de llegar a MongoDB.
+- **Vistas con Handlebars:** `/views/services` y `/views/availability`.
+- **Tiempo real con Socket.io:** eventos de servicios y reservas, más una acción de cliente para cambiar la disponibilidad sin recargar la página.
+- **Arquitectura en capas:** `routes → controllers → services → repositories → DAO → models`.
+- **Configuración por entorno:** todo vía `.env` (plantilla en `.env.example`).
 
 ## Requisitos
 
