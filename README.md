@@ -11,10 +11,10 @@ API REST completa para la gestión de **servicios**, **reservas** y **mensajes**
 ## Funcionalidades
 
 - **CRUD completo de servicios:** `GET`, `GET /:sid`, `POST`, `PUT` y `DELETE` en `/api/services`.
-- **Reservas y asociación de servicios:** `POST /api/bookings`, `GET /api/bookings/:bid` y `POST /api/bookings/:bid/services/:sid`. Los servicios se guardan como referencias `{ service: ObjectId, quantity: Number }`, nunca el objeto completo.
+- **CRUD completo de reservas y gestión de servicios:** `GET`, `POST`, `GET /:bid`, `PUT/PATCH /:bid`, `DELETE /:bid` en `/api/bookings`, más asociación (`POST`), actualización de cantidad (`PUT/PATCH`) y desasociación (`DELETE`) en `/api/bookings/:bid/services/:sid`. Los servicios se guardan como referencias `{ service: ObjectId, quantity: Number }`, nunca el objeto completo.
 - **Consultas avanzadas:** `GET /api/services` con filtros (`category`, `available`), paginación (`page`, `limit`) y ordenamiento (`sortBy`, `order`).
 - **Relaciones con `populate`:** `GET /api/bookings/:bid` devuelve los datos completos de cada servicio asociado junto con los datos de la reserva.
-- **Validación con Zod:** esquemas en `src/validators/` aplicados mediante middleware **antes** de llegar a MongoDB.
+- **Validación con Zod:** esquemas en `src/validators/` (para `services`, `bookings`, `messages` y parámetros `ObjectId`) aplicados mediante middleware **antes** de llegar a MongoDB.
 - **Vistas con Handlebars:** `/views/services` y `/views/availability`.
 - **Tiempo real con Socket.io:** eventos de servicios y reservas, más una acción de cliente para cambiar la disponibilidad sin recargar la página.
 - **Arquitectura en capas:** `routes → controllers → services → repositories → DAO → models`.
@@ -98,6 +98,7 @@ src/
   validators/
     service.validator.js       # Esquemas Zod de services
     booking.validator.js       # Esquemas Zod de bookings
+    message.validator.js       # Esquemas Zod de messages
   utils/error.util.js          # Normalización de errores para las respuestas HTTP
   app.js                       # Configuración de Express, Handlebars y estáticos
   server.js                    # Conexión a MongoDB, Socket.io y arranque del servidor
@@ -183,9 +184,14 @@ Cada reserva tiene: `id` (autogenerado por MongoDB), `clientName`, `clientEmail`
 
 | Método | Ruta                               | Descripción                                                                   |
 |--------|------------------------------------|-------------------------------------------------------------------------------|
-| POST   | `/api/bookings`                    | Crea una reserva (201 si se crea, 400 si faltan campos). Puede iniciar con `services` vacío |
+| GET    | `/api/bookings`                    | Devuelve el listado de reservas. Soporta query `?populate=true`              |
 | GET    | `/api/bookings/:bid`               | Devuelve la reserva con los servicios completos (`populate`) (200 si existe, 404 si no) |
-| POST   | `/api/bookings/:bid/services/:sid` | Agrega un servicio a una reserva existente (200). Valida que ambos existan (404) |
+| POST   | `/api/bookings`                    | Crea una reserva (201 si se crea, 400 si faltan campos). Inicia con `services: []` |
+| PUT / PATCH | `/api/bookings/:bid`          | Actualiza los datos de una reserva (cliente, fecha, hora, estado) (200 si existe, 404 si no) |
+| DELETE | `/api/bookings/:bid`               | Elimina una reserva (200 si existe, 404 si no)                                |
+| POST   | `/api/bookings/:bid/services/:sid` | Agrega un servicio a una reserva existente o incrementa su cantidad si ya existe (200) |
+| PUT / PATCH | `/api/bookings/:bid/services/:sid` | Actualiza la cantidad (`quantity`) de un servicio dentro de la reserva (200 si existe, 404 si no) |
+| DELETE | `/api/bookings/:bid/services/:sid` | Quita un servicio de la reserva (200 si existe, 404 si no)                    |
 
 ### Reserva con servicios completos (`populate`)
 
@@ -231,12 +237,18 @@ La validación vive en una capa propia: `src/middlewares/validate.middleware.js`
 definidos en `src/validators/` **antes del controller** (y por lo tanto antes de llegar a MongoDB).
 Ante datos inválidos responde `400` con el detalle de cada error.
 
-| Esquema                            | Se aplica en                                              |
-|------------------------------------|-----------------------------------------------------------|
-| `createServiceSchema`              | `POST /api/services`                                      |
-| `updateServiceSchema`              | `PUT /api/services/:sid`                                  |
-| `createBookingSchema`              | `POST /api/bookings`                                      |
-| `addServiceToBookingParamsSchema`  | `POST /api/bookings/:bid/services/:sid` (valida `bid` y `sid` como ObjectId) |
+| Esquema                            | Se aplica en                                                                   |
+|------------------------------------|--------------------------------------------------------------------------------|
+| `createServiceSchema`              | `POST /api/services`                                                           |
+| `updateServiceSchema`              | `PUT /api/services/:sid`                                                       |
+| `serviceIdParamSchema`             | `GET`, `PUT`, `DELETE /api/services/:sid`                                      |
+| `createBookingSchema`              | `POST /api/bookings`                                                           |
+| `updateBookingSchema`              | `PUT`, `PATCH /api/bookings/:bid`                                              |
+| `bookingIdParamSchema`             | `GET`, `PUT`, `PATCH`, `DELETE /api/bookings/:bid`                             |
+| `serviceInBookingParamsSchema`     | `POST`, `PUT`, `PATCH`, `DELETE /api/bookings/:bid/services/:sid`              |
+| `updateServiceInBookingSchema`     | `PUT`, `PATCH /api/bookings/:bid/services/:sid`                                 |
+| `createMessageSchema`              | `POST /api/messages`                                                           |
+| `messageIdParamSchema`             | `GET /api/messages/:mid`                                                       |
 
 Ejemplo de respuesta `400`:
 

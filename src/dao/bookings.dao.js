@@ -2,9 +2,23 @@ import mongoose from 'mongoose';
 import Booking from '../models/booking.model.js';
 
 class BookingsDAO {
-  async getAll() {
-    const bookings = await Booking.find().sort({ date: 1, time: 1 });
-    return bookings.map(booking => booking.toJSON());
+  async getAll({ populate = false } = {}) {
+    const query = Booking.find().sort({ date: 1, time: 1 });
+    if (populate) {
+      query.populate('services.service');
+    }
+
+    const bookings = await query;
+    return bookings.map(booking => {
+      const plain = booking.toJSON();
+      if (populate) {
+        plain.services = (booking.services || []).map(item => ({
+          service: item.service ? item.service.toJSON() : null,
+          quantity: item.quantity
+        }));
+      }
+      return plain;
+    });
   }
 
   async create(data) {
@@ -30,7 +44,7 @@ class BookingsDAO {
     const plain = booking.toJSON();
 
     if (populate) {
-      plain.services = booking.services.map(item => ({
+      plain.services = (booking.services || []).map(item => ({
         service: item.service ? item.service.toJSON() : null,
         quantity: item.quantity
       }));
@@ -48,6 +62,15 @@ class BookingsDAO {
       returnDocument: 'after',
       runValidators: true
     });
+    return booking ? booking.toJSON() : null;
+  }
+
+  async delete(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+
+    const booking = await Booking.findByIdAndDelete(id);
     return booking ? booking.toJSON() : null;
   }
 }

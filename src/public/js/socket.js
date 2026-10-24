@@ -86,6 +86,24 @@ socket.on('booking:created', booking => {
   tbody.appendChild(createBookingRow(booking));
 });
 
+socket.on('booking:updated', booking => {
+  const tbody = document.getElementById('bookingsTable');
+  if (!tbody) return;
+  const row = tbody.querySelector(`tr[data-booking-id="${booking.id}"]`);
+  if (row) {
+    row.replaceWith(createBookingRow(booking));
+  }
+});
+
+socket.on('booking:deleted', ({ id }) => {
+  const tbody = document.getElementById('bookingsTable');
+  if (!tbody) return;
+  const row = tbody.querySelector(`tr[data-booking-id="${id}"]`);
+  if (row) {
+    row.remove();
+  }
+});
+
 // --- Eventos que salen HACIA el servidor ---
 document.addEventListener('click', event => {
   const button = event.target.closest('.toggle-btn');

@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+const objectId = z
+  .string()
+  .regex(/^[0-9a-fA-F]{24}$/, 'Debe ser un ObjectId válido');
+
+export const serviceIdParamSchema = z.object({
+  sid: objectId
+});
+
 export const createServiceSchema = z.object({
   name: z.string().trim().min(1, 'name es obligatorio'),
   description: z.string().trim().min(1, 'description es obligatorio'),

@@ -3,8 +3,8 @@ class BookingsRepository {
     this.dao = dao;
   }
 
-  getAll() {
-    return this.dao.getAll();
+  getAll(options) {
+    return this.dao.getAll(options);
   }
 
   create(booking) {
@@ -17,6 +17,10 @@ class BookingsRepository {
 
   update(id, data) {
     return this.dao.update(id, data);
+  }
+
+  delete(id) {
+    return this.dao.delete(id);
   }
 }
 
